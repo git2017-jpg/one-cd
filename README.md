@@ -1,7 +1,10 @@
 # one-cd
 基于kubernetes平台利用client-go API实现的部署系统
 
-###功能介绍
+### kubernetes版本
+基于kubernetesv1.18开发测试
+
+### 功能介绍
 * 支持多集群
 * 支持deployment部署更新删除
 * 支持deployment回滚到指定的版本
