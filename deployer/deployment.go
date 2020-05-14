@@ -65,6 +65,12 @@ func (d *Deployer) Deploy(yaml string) (deployment *v1.Deployment, err error) {
 	}
 	cluster := deployment.ObjectMeta.ClusterName
 	namespace := deployment.ObjectMeta.Namespace
+	if cluster == "" {
+		cluster = "default"
+	}
+	if namespace == "" {
+		namespace = "default"
+	}
 	deploymentName := deployment.ObjectMeta.Name
 	if client, err = d.Client(cluster); err != nil {
 		return
