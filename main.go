@@ -1,13 +1,21 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"one-cd/deployer"
+	"os"
 	"time"
+
+	"k8s.io/klog"
 )
 
 func main() {
+	flagSet := flag.CommandLine
+	klog.InitFlags(flagSet)
+	flagSet.Parse(os.Args[1:])
+
 	d := deployer.New()
 	d.AddCluster("default", "/Users/rongchang/.kube/config")
 
@@ -23,5 +31,7 @@ func main() {
 	}
 	fmt.Println(data)
 
-	d.WaitForPodContainersRunning("default", "default", "k8s-demo", time.Second*10, time.Second*2)
+	d.WaitForPodContainersRunning("default", "default", "k8s-demo", time.Second*100, time.Second*3)
+
+	d.Finalize()
 }

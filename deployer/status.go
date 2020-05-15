@@ -1,53 +1,73 @@
 package deployer
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+	v1 "k8s.io/api/apps/v1"
+	coreV1 "k8s.io/api/core/v1"
 )
 
 // WaitForPodContainersRunning ...
-func (d *Deployer) WaitForPodContainersRunning(cluster string, namespace string, deploymentName string, threshold, checkInterval time.Duration) error {
+func (d *Deployer) WaitForPodContainersRunning(cluster string, namespace string, deploymentName string, threshold, checkInterval time.Duration) (err error) {
+	var (
+		running bool
+		info    string
+	)
 	end := time.Now().Add(threshold)
 	for true {
 		<-time.NewTimer(checkInterval).C
-		running, err := d.podContainersRunning(cluster, namespace, deploymentName)
-		if running {
-			return nil
-		}
+		running, info, err = d.podContainersRunning(cluster, namespace, deploymentName)
+		fmt.Println(info)
 		if err != nil {
-			println(fmt.Sprintf("Encountered an error checking for running pods: %s", err))
+			break
+		}
+		if running {
+			info = fmt.Sprintf("deployment %q successfully rolled out\n", deploymentName)
+			fmt.Println(info)
+			return
 		}
 		if time.Now().After(end) {
-			return fmt.Errorf("Failed to get all running containers")
+			info = "error: timed out waiting for the condition\n"
+			err = errors.New(info)
+			fmt.Println(info)
+			return
 		}
 	}
-	return nil
+	return
 }
 
-func (d *Deployer) podContainersRunning(cluster string, namespace string, deploymentName string) (running bool, err error) {
+func (d *Deployer) podContainersRunning(cluster string, namespace string, deploymentName string) (running bool, info string, err error) {
 	var (
-		client *kubernetes.Clientset
+		deployment *v1.Deployment
+		pods       []*coreV1.Pod
 	)
-	if client, err = d.Client(cluster); err != nil {
+	if deployment, err = d.Deployment(cluster, namespace, deploymentName); err != nil {
+		info = fmt.Sprintf("get deployment %s failed", deploymentName)
 		return
 	}
-	pods, err := client.CoreV1().Pods(namespace).List(d.ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s", deploymentName),
-	})
-	if err != nil {
-		return false, err
+	if pods, err = d.PodList(cluster, namespace, deploymentName); err != nil {
+		info = fmt.Sprintf("get PodList %s failed", deploymentName)
+		return
 	}
-
-	for _, item := range pods.Items {
-		fmt.Println(item.Status.Message)
+	if deployment.Spec.Replicas != nil && deployment.Status.UpdatedReplicas < *deployment.Spec.Replicas {
+		info = fmt.Sprintf("Waiting for deployment %q rollout to finish: %d out of %d new replicas have been updated...", deployment.Name, deployment.Status.UpdatedReplicas, *deployment.Spec.Replicas)
+	}
+	if deployment.Status.Replicas > deployment.Status.UpdatedReplicas {
+		info = fmt.Sprintf("Waiting for deployment %q rollout to finish: %d old replicas are pending termination...", deployment.Name, deployment.Status.Replicas-deployment.Status.UpdatedReplicas)
+	}
+	if deployment.Status.AvailableReplicas < deployment.Status.UpdatedReplicas {
+		info = fmt.Sprintf("Waiting for deployment %q rollout to finish: %d of %d updated replicas are available...", deployment.Name, deployment.Status.AvailableReplicas, deployment.Status.UpdatedReplicas)
+	}
+	for _, item := range pods {
 		for _, status := range item.Status.ContainerStatuses {
 			if !status.Ready {
-				return false, nil
+				running = false
+				return
 			}
 		}
 	}
-	return true, nil
+	running = true
+	return
 }
