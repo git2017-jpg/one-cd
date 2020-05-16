@@ -3,20 +3,26 @@ package deployer
 import (
 	"fmt"
 	"log"
+	"path"
 
-	corev1informer "k8s.io/client-go/informers/core/v1"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-var stopChan = make(chan struct{})
+var stopper = make(chan struct{})
 
 // ClientInfo ...
 type ClientInfo struct {
-	Client   *kubernetes.Clientset
-	Informer cache.SharedIndexInformer
+	Client      *kubernetes.Clientset
+	PodInformer cache.SharedIndexInformer
+}
+
+func (d *Deployer) loadCluster(cluster string) (clientInfo *ClientInfo, err error) {
+	clientInfo, err = d.AddCluster(cluster, path.Join(d.configPath, cluster))
+	return
 }
 
 // AddCluster 增加集群
@@ -31,15 +37,16 @@ func (d *Deployer) AddCluster(cluster, kubeConfig string) (clientInfo *ClientInf
 		log.Println("NewForConfig", err)
 		return
 	}
-	informer := corev1informer.NewPodInformer(client, "", 0, cache.Indexers{})
-	go informer.Run(stopChan)
-	if !cache.WaitForCacheSync(stopChan, informer.HasSynced) {
-		log.Println(fmt.Errorf("sync cache err %s", cluster))
+	factory := informers.NewSharedInformerFactory(client, 0)
+	podInformer := factory.Core().V1().Pods().Informer()
+	go factory.Start(stopper)
+	if !cache.WaitForCacheSync(stopper, podInformer.HasSynced) {
+		log.Println(fmt.Errorf("Timed out waiting for caches to sync, cluster: %s", cluster))
 		return
 	}
 	clientInfo = &ClientInfo{
-		Client:   client,
-		Informer: informer,
+		Client:      client,
+		PodInformer: podInformer,
 	}
 	d.clients.Store(cluster, clientInfo)
 	return
@@ -49,21 +56,25 @@ func (d *Deployer) AddCluster(cluster, kubeConfig string) (clientInfo *ClientInf
 func (d *Deployer) Client(cluster string) (client *kubernetes.Clientset, err error) {
 	v, ok := d.clients.Load(cluster)
 	if !ok {
-		err = fmt.Errorf("无效的或未启用的集群 %s", cluster)
-		return
+		if v, err = d.loadCluster(cluster); err != nil {
+			err = fmt.Errorf("未找到集群 %s 配置文件", cluster)
+			return
+		}
 	}
 	client = v.(*ClientInfo).Client
 	return
 }
 
 // Informer ...
-func (d *Deployer) Informer(cluster string) (informer cache.SharedIndexInformer, err error) {
+func (d *Deployer) PodInformer(cluster string) (informer cache.SharedIndexInformer, err error) {
 	v, ok := d.clients.Load(cluster)
 	if !ok {
-		err = fmt.Errorf("无效的或未启用的集群 %s", cluster)
-		return
+		if v, err = d.loadCluster(cluster); err != nil {
+			err = fmt.Errorf("未找到集群 %s 配置文件", cluster)
+			return
+		}
 	}
-	informer = v.(*ClientInfo).Informer
+	informer = v.(*ClientInfo).PodInformer
 	return
 }
 
@@ -78,5 +89,5 @@ func (d *Deployer) Clusters() (list []string) {
 
 // Finalize ...
 func (d *Deployer) Finalize() {
-	close(stopChan)
+	close(stopper)
 }

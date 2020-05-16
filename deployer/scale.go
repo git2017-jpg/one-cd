@@ -7,7 +7,7 @@ import (
 )
 
 // GetScale ...
-func (d *Deployer) GetScale(cluster string, namespace string, deploymentName string) (scale *autoscalingv1.Scale, err error) {
+func (d *Deployer) GetScale(cluster, namespace, deploymentName string) (scale *autoscalingv1.Scale, err error) {
 	var client *kubernetes.Clientset
 	if client, err = d.Client(cluster); err != nil {
 		return
@@ -19,7 +19,7 @@ func (d *Deployer) GetScale(cluster string, namespace string, deploymentName str
 }
 
 // UpdateScale 扩缩容
-func (d *Deployer) UpdateScale(cluster string, namespace string, deploymentName string, replicas int32) (scale *autoscalingv1.Scale, err error) {
+func (d *Deployer) UpdateScale(cluster, namespace, deploymentName string, replicas int32) (scale *autoscalingv1.Scale, err error) {
 	var client *kubernetes.Clientset
 	if client, err = d.Client(cluster); err != nil {
 		return

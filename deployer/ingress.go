@@ -7,7 +7,7 @@ import (
 )
 
 // Ingress 获取ingress
-func (d *Deployer) Ingress(cluster string, namespace string, name string) (ingress *v1beta1.Ingress, err error) {
+func (d *Deployer) Ingress(cluster, namespace, name string) (ingress *v1beta1.Ingress, err error) {
 	var client *kubernetes.Clientset
 	if client, err = d.Client(cluster); err != nil {
 		return

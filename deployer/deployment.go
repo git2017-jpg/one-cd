@@ -13,7 +13,7 @@ import (
 )
 
 // Deployment 获取Deployment信息
-func (d *Deployer) Deployment(cluster string, namespace string, deploymentName string) (deployment *v1.Deployment, err error) {
+func (d *Deployer) Deployment(cluster, namespace, deploymentName string) (deployment *v1.Deployment, err error) {
 	var client *kubernetes.Clientset
 	if client, err = d.Client(cluster); err != nil {
 		return
@@ -25,7 +25,7 @@ func (d *Deployer) Deployment(cluster string, namespace string, deploymentName s
 }
 
 // DeploymentDelete 删除Deployment
-func (d *Deployer) DeploymentDelete(cluster string, namespace string, deploymentName string) (err error) {
+func (d *Deployer) DeploymentDelete(cluster, namespace, deploymentName string) (err error) {
 	var client *kubernetes.Clientset
 	if client, err = d.Client(cluster); err != nil {
 		return
@@ -37,7 +37,7 @@ func (d *Deployer) DeploymentDelete(cluster string, namespace string, deployment
 }
 
 // DeploymentEvents 获取Deployment事件
-func (d *Deployer) DeploymentEvents(cluster string, namespace string, deploymentName string) (list *coreV1.EventList, err error) {
+func (d *Deployer) DeploymentEvents(cluster, namespace, deploymentName string) (list *coreV1.EventList, err error) {
 	var client *kubernetes.Clientset
 	if client, err = d.Client(cluster); err != nil {
 		return
@@ -88,7 +88,7 @@ func (d *Deployer) Deploy(yaml string) (deployment *v1.Deployment, err error) {
 }
 
 // Update 更新镜像版本
-func (d *Deployer) Update(cluster string, namespace string, deploymentName, image string) (deployment *v1.Deployment, err error) {
+func (d *Deployer) Update(cluster, namespace, deploymentName, image string) (deployment *v1.Deployment, err error) {
 	var client *kubernetes.Clientset
 	if deployment, err = d.Deployment(cluster, namespace, deploymentName); err != nil {
 		return
@@ -104,7 +104,7 @@ func (d *Deployer) Update(cluster string, namespace string, deploymentName, imag
 }
 
 // RollBack 回滚需要指定版本
-func (d *Deployer) RollBack(cluster string, namespace string, deploymentName, rs string) (deployment *v1.Deployment, err error) {
+func (d *Deployer) RollBack(cluster, namespace, deploymentName, rs string) (deployment *v1.Deployment, err error) {
 	var (
 		client         *kubernetes.Clientset
 		replicaSetList *v1.ReplicaSetList
@@ -136,7 +136,7 @@ func (d *Deployer) RollBack(cluster string, namespace string, deploymentName, rs
 }
 
 // ReplicaSetList 获取rs列表
-func (d *Deployer) ReplicaSetList(cluster string, namespace string, deploymentName string) (replicaSetList *v1.ReplicaSetList, err error) {
+func (d *Deployer) ReplicaSetList(cluster, namespace, deploymentName string) (replicaSetList *v1.ReplicaSetList, err error) {
 	var (
 		client *kubernetes.Clientset
 	)

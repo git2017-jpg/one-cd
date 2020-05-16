@@ -9,8 +9,11 @@ import (
 	coreV1 "k8s.io/api/core/v1"
 )
 
+type statusPrinter = func(cluster, namespace, deploymentName string, info string)
+
 // WaitForPodContainersRunning ...
-func (d *Deployer) WaitForPodContainersRunning(cluster string, namespace string, deploymentName string, threshold, checkInterval time.Duration) (err error) {
+func (d *Deployer) WaitForPodContainersRunning(cluster, namespace, deploymentName string, threshold, checkInterval time.Duration,
+	printer statusPrinter) (err error) {
 	var (
 		running bool
 		info    string
@@ -19,26 +22,32 @@ func (d *Deployer) WaitForPodContainersRunning(cluster string, namespace string,
 	for true {
 		<-time.NewTimer(checkInterval).C
 		running, info, err = d.podContainersRunning(cluster, namespace, deploymentName)
-		fmt.Println(info)
+		if printer != nil {
+			printer(cluster, namespace, deploymentName, info)
+		}
 		if err != nil {
 			break
 		}
 		if running {
 			info = fmt.Sprintf("deployment %q successfully rolled out\n", deploymentName)
-			fmt.Println(info)
+			if printer != nil {
+				printer(cluster, namespace, deploymentName, info)
+			}
 			return
 		}
 		if time.Now().After(end) {
 			info = "error: timed out waiting for the condition\n"
 			err = errors.New(info)
-			fmt.Println(info)
+			if printer != nil {
+				printer(cluster, namespace, deploymentName, info)
+			}
 			return
 		}
 	}
 	return
 }
 
-func (d *Deployer) podContainersRunning(cluster string, namespace string, deploymentName string) (running bool, info string, err error) {
+func (d *Deployer) podContainersRunning(cluster, namespace, deploymentName string) (running bool, info string, err error) {
 	var (
 		deployment *v1.Deployment
 		pods       []*coreV1.Pod

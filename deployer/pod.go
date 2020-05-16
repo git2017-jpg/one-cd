@@ -14,7 +14,7 @@ import (
 )
 
 // PodEvents 获取pod事件
-func (d *Deployer) PodEvents(cluster string, namespace string, podName string) (list *coreV1.EventList, err error) {
+func (d *Deployer) PodEvents(cluster, namespace, podName string) (list *coreV1.EventList, err error) {
 	var client *kubernetes.Clientset
 	if client, err = d.Client(cluster); err != nil {
 		return
@@ -27,9 +27,9 @@ func (d *Deployer) PodEvents(cluster string, namespace string, podName string) (
 }
 
 // PodList ...
-func (d *Deployer) PodList(cluster string, namespace string, deploymentName string) (podList []*coreV1.Pod, err error) {
+func (d *Deployer) PodList(cluster, namespace, deploymentName string) (podList []*coreV1.Pod, err error) {
 	var informer cache.SharedIndexInformer
-	if informer, err = d.Informer(cluster); err != nil {
+	if informer, err = d.PodInformer(cluster); err != nil {
 		return
 	}
 	parse, _ := labels.Parse(fmt.Sprintf("app=%s", deploymentName))
@@ -40,7 +40,7 @@ func (d *Deployer) PodList(cluster string, namespace string, deploymentName stri
 }
 
 // PodLog 获取pod日志
-func (d *Deployer) PodLog(cluster string, namespace string, podName, container string, sinceSeconds int64, previous bool) (log string, err error) {
+func (d *Deployer) PodLog(cluster, namespace, podName, container string, sinceSeconds int64, previous bool) (log string, err error) {
 	var client *kubernetes.Clientset
 	if client, err = d.Client(cluster); err != nil {
 		return
@@ -63,7 +63,7 @@ func (d *Deployer) PodLog(cluster string, namespace string, podName, container s
 }
 
 // PodDelete 删除pod
-func (d *Deployer) PodDelete(cluster string, namespace string, podName string) (err error) {
+func (d *Deployer) PodDelete(cluster, namespace, podName string) (err error) {
 	var client *kubernetes.Clientset
 	if client, err = d.Client(cluster); err != nil {
 		return

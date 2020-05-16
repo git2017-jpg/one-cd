@@ -7,13 +7,15 @@ import (
 
 // Deployer ...
 type Deployer struct {
-	ctx     context.Context
-	clients sync.Map
+	ctx        context.Context
+	clients    sync.Map
+	configPath string
 }
 
 // New ...
-func New() *Deployer {
+func New(configPath string) *Deployer {
 	return &Deployer{
-		ctx: context.TODO(),
+		ctx:        context.TODO(),
+		configPath: configPath,
 	}
 }
