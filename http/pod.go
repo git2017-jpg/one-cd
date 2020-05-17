@@ -36,7 +36,7 @@ func podLogHandler(c *MyContext) {
 			Namespace    string `form:"namespace" binding:"required"`
 			PodName      string `form:"podName" binding:"required"`
 			Container    string `form:"container" binding:"required"`
-			SinceSeconds int64  `form:"sinceSeconds"`
+			SinceSeconds int64  `form:"sinceSeconds" binding:"required"`
 			Previous     bool   `form:"previous"`
 		}
 	)

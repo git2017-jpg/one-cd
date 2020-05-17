@@ -22,9 +22,10 @@ func Start(listen string) {
 	g1 := router.Group("/v1/deployment")
 	{
 		g1.POST("/deploy", handler(deployHandler))
+		g1.POST("/update", handler(updateHandler))
 		g1.POST("/RollBack", handler(rollBackHandler))
 		g1.DELETE("/delete", handler(deleteDeploymentHandler))
-		g1.GET("/info", handler(deploymentHandler))
+		g1.GET("/describe", handler(deploymentHandler))
 		g1.GET("/rs", handler(replicaSetHandler))
 	}
 
@@ -33,6 +34,11 @@ func Start(listen string) {
 		g2.GET("/list", handler(podListHandler))
 		g2.GET("/events", handler(podEventsHandler))
 		g2.GET("/log", handler(podLogHandler))
+	}
+
+	g3 := router.Group("/v1/ingress")
+	{
+		g3.GET("/describe", handler(ingressHandler))
 	}
 
 	router.Run(listen)

@@ -26,11 +26,11 @@ func deployHandler(c *MyContext) {
 		})
 	c.JSON(http.StatusOK, &RespCommon{
 		Code: HTTPErrorCodeSuccess,
-		// Data: deployment,
+		Data: deployment,
 	})
 }
 
-func deleteDeploymentHandler(c *MyContext) {
+func updateHandler(c *MyContext) {
 	var (
 		err      error
 		httpCode = http.StatusInternalServerError
@@ -38,6 +38,7 @@ func deleteDeploymentHandler(c *MyContext) {
 			Cluster        string `json:"cluster" binding:"required"`
 			Namespace      string `json:"namespace" binding:"required"`
 			DeploymentName string `json:"deploymentName" binding:"required"`
+			Image          string `json:"image" binding:"required"`
 		}
 	)
 	defer httpErrorCommon(c, &httpCode, &err)
@@ -45,11 +46,13 @@ func deleteDeploymentHandler(c *MyContext) {
 		httpCode = http.StatusBadRequest
 		return
 	}
-	if err = svc.Deployer.DeploymentDelete(req.Cluster, req.Namespace, req.DeploymentName); err != nil {
+	deployment, err := svc.Deployer.Update(req.Cluster, req.Namespace, req.DeploymentName, req.Image)
+	if err != nil {
 		return
 	}
 	c.JSON(http.StatusOK, &RespCommon{
 		Code: HTTPErrorCodeSuccess,
+		Data: deployment,
 	})
 }
 
@@ -101,6 +104,29 @@ func deploymentHandler(c *MyContext) {
 	c.JSON(http.StatusOK, &RespCommon{
 		Code: HTTPErrorCodeSuccess,
 		Data: deployment,
+	})
+}
+
+func deleteDeploymentHandler(c *MyContext) {
+	var (
+		err      error
+		httpCode = http.StatusInternalServerError
+		req      struct {
+			Cluster        string `json:"cluster" binding:"required"`
+			Namespace      string `json:"namespace" binding:"required"`
+			DeploymentName string `json:"deploymentName" binding:"required"`
+		}
+	)
+	defer httpErrorCommon(c, &httpCode, &err)
+	if err = c.Bind(&req); err != nil {
+		httpCode = http.StatusBadRequest
+		return
+	}
+	if err = svc.Deployer.DeploymentDelete(req.Cluster, req.Namespace, req.DeploymentName); err != nil {
+		return
+	}
+	c.JSON(http.StatusOK, &RespCommon{
+		Code: HTTPErrorCodeSuccess,
 	})
 }
 
