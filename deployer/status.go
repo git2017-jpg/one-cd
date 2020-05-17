@@ -1,0 +1,89 @@
+package deployer
+
+import (
+	"errors"
+	"fmt"
+	"log"
+	"runtime/debug"
+	"time"
+
+	v1 "k8s.io/api/apps/v1"
+	coreV1 "k8s.io/api/core/v1"
+)
+
+type statusPrinter = func(cluster, namespace, deploymentName string, info string)
+
+// WaitForPodContainersRunning ...
+func (d *Deployer) WaitForPodContainersRunning(cluster, namespace, deploymentName string, threshold, checkInterval time.Duration,
+	printer statusPrinter) (err error) {
+	var (
+		running bool
+		info    string
+	)
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println(r, string(debug.Stack()))
+		}
+	}()
+	end := time.Now().Add(threshold)
+	for {
+		<-time.NewTimer(checkInterval).C
+		running, info, err = d.podContainersRunning(cluster, namespace, deploymentName)
+		if printer != nil {
+			printer(cluster, namespace, deploymentName, info)
+		}
+		if err != nil {
+			break
+		}
+		if running {
+			info = fmt.Sprintf("deployment %q successfully rolled out\n", deploymentName)
+			if printer != nil {
+				printer(cluster, namespace, deploymentName, info)
+			}
+			return
+		}
+		if time.Now().After(end) {
+			info = "error: timed out waiting for the condition\n"
+			err = errors.New(info)
+			if printer != nil {
+				printer(cluster, namespace, deploymentName, info)
+			}
+			return
+		}
+	}
+	return
+}
+
+func (d *Deployer) podContainersRunning(cluster, namespace, deploymentName string) (running bool, info string, err error) {
+	var (
+		deployment *v1.Deployment
+		pods       []*coreV1.Pod
+	)
+	if deployment, err = d.Deployment(cluster, namespace, deploymentName); err != nil {
+		info = fmt.Sprintf("deployments.apps %s not found", deploymentName)
+		return
+	}
+	if pods, err = d.PodList(cluster, namespace, deploymentName); err != nil {
+		info = fmt.Sprintf("get PodList %s failed", deploymentName)
+		return
+	}
+	if deployment.Spec.Replicas != nil && deployment.Status.UpdatedReplicas < *deployment.Spec.Replicas {
+		info = fmt.Sprintf("Waiting for deployment %q rollout to finish: %d out of %d new replicas have been updated...", deployment.Name, deployment.Status.UpdatedReplicas, *deployment.Spec.Replicas)
+	}
+	if deployment.Status.Replicas > deployment.Status.UpdatedReplicas {
+		info = fmt.Sprintf("Waiting for deployment %q rollout to finish: %d old replicas are pending termination...", deployment.Name, deployment.Status.Replicas-deployment.Status.UpdatedReplicas)
+	}
+	if deployment.Status.AvailableReplicas < deployment.Status.UpdatedReplicas {
+		info = fmt.Sprintf("Waiting for deployment %q rollout to finish: %d of %d updated replicas are available...", deployment.Name, deployment.Status.AvailableReplicas, deployment.Status.UpdatedReplicas)
+	}
+	for _, item := range pods {
+		for _, status := range item.Status.ContainerStatuses {
+			if !status.Ready {
+				running = false
+				return
+			}
+		}
+	}
+	running = true
+	return
+}

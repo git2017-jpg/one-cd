@@ -3,6 +3,8 @@ module one-cd
 go 1.14
 
 require (
+	github.com/BurntSushi/toml v0.3.1
+	github.com/gin-gonic/gin v1.6.3
 	github.com/golang/protobuf v1.3.3 // indirect
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/imdario/mergo v0.3.9 // indirect
@@ -16,5 +18,6 @@ require (
 	k8s.io/api v0.18.2
 	k8s.io/apimachinery v0.18.2
 	k8s.io/client-go v0.18.2
+	k8s.io/klog v1.0.0
 	k8s.io/utils v0.0.0-20200414100711-2df71ebbae66 // indirect
 )
