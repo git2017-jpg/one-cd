@@ -3,6 +3,8 @@ module one-cd
 go 1.14
 
 require (
+	github.com/BurntSushi/toml v0.3.1
+	github.com/gin-gonic/gin v1.6.3
 	github.com/golang/protobuf v1.3.3 // indirect
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/imdario/mergo v0.3.9 // indirect

@@ -53,8 +53,9 @@ func (d *Deployer) DeploymentEvents(cluster, namespace, deploymentName string) (
 // Deploy ...
 func (d *Deployer) Deploy(yaml string) (deployment *v1.Deployment, err error) {
 	var (
-		data   []byte
-		client *kubernetes.Clientset
+		data    []byte
+		cluster string
+		client  *kubernetes.Clientset
 	)
 	if data, err = yaml2.ToJSON([]byte(yaml)); err != nil {
 		return
@@ -63,15 +64,14 @@ func (d *Deployer) Deploy(yaml string) (deployment *v1.Deployment, err error) {
 	if err = json.Unmarshal(data, deployment); err != nil {
 		return
 	}
-	cluster := deployment.ObjectMeta.ClusterName
-	namespace := deployment.ObjectMeta.Namespace
-	if cluster == "" {
+	if cluster = deployment.ClusterName; cluster == "" {
 		cluster = "default"
 	}
-	if namespace == "" {
-		namespace = "default"
+	if deployment.Namespace == "" {
+		deployment.Namespace = "default"
 	}
-	deploymentName := deployment.ObjectMeta.Name
+	namespace := deployment.Namespace
+	deploymentName := deployment.Name
 	if client, err = d.Client(cluster); err != nil {
 		return
 	}
@@ -84,6 +84,7 @@ func (d *Deployer) Deploy(yaml string) (deployment *v1.Deployment, err error) {
 			return
 		}
 	}
+	deployment.ClusterName = cluster
 	return
 }
 

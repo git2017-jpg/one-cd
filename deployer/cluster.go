@@ -65,7 +65,7 @@ func (d *Deployer) Client(cluster string) (client *kubernetes.Clientset, err err
 	return
 }
 
-// Informer ...
+// PodInformer ...
 func (d *Deployer) PodInformer(cluster string) (informer cache.SharedIndexInformer, err error) {
 	v, ok := d.clients.Load(cluster)
 	if !ok {

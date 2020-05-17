@@ -3,6 +3,8 @@ package deployer
 import (
 	"errors"
 	"fmt"
+	"log"
+	"runtime/debug"
 	"time"
 
 	v1 "k8s.io/api/apps/v1"
@@ -18,8 +20,13 @@ func (d *Deployer) WaitForPodContainersRunning(cluster, namespace, deploymentNam
 		running bool
 		info    string
 	)
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println(r, string(debug.Stack()))
+		}
+	}()
 	end := time.Now().Add(threshold)
-	for true {
+	for {
 		<-time.NewTimer(checkInterval).C
 		running, info, err = d.podContainersRunning(cluster, namespace, deploymentName)
 		if printer != nil {
@@ -53,7 +60,7 @@ func (d *Deployer) podContainersRunning(cluster, namespace, deploymentName strin
 		pods       []*coreV1.Pod
 	)
 	if deployment, err = d.Deployment(cluster, namespace, deploymentName); err != nil {
-		info = fmt.Sprintf("get deployment %s failed", deploymentName)
+		info = fmt.Sprintf("deployments.apps %s not found", deploymentName)
 		return
 	}
 	if pods, err = d.PodList(cluster, namespace, deploymentName); err != nil {
