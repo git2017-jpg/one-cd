@@ -56,6 +56,29 @@ func updateHandler(c *MyContext) {
 	})
 }
 
+func undoHandler(c *MyContext) {
+	var (
+		err      error
+		httpCode = http.StatusInternalServerError
+		req      struct {
+			Cluster        string `json:"cluster" binding:"required"`
+			Namespace      string `json:"namespace" binding:"required"`
+			DeploymentName string `json:"deploymentName" binding:"required"`
+		}
+	)
+	defer httpErrorCommon(c, &httpCode, &err)
+	if err = c.Bind(&req); err != nil {
+		httpCode = http.StatusBadRequest
+		return
+	}
+	if err = svc.Deployer.Undo(req.Cluster, req.Namespace, req.DeploymentName); err != nil {
+		return
+	}
+	c.JSON(http.StatusOK, &RespCommon{
+		Code: HTTPErrorCodeSuccess,
+	})
+}
+
 func rollBackHandler(c *MyContext) {
 	var (
 		err      error

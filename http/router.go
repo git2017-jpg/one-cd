@@ -23,6 +23,7 @@ func Start(listen string) {
 	{
 		g1.POST("/deploy", handler(deployHandler))
 		g1.POST("/update", handler(updateHandler))
+		g1.POST("/undo", handler(undoHandler))
 		g1.POST("/RollBack", handler(rollBackHandler))
 		g1.DELETE("/delete", handler(deleteDeploymentHandler))
 		g1.GET("/describe", handler(deploymentHandler))
