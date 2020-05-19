@@ -138,8 +138,13 @@ func (d *Deployer) RollBack(cluster, namespace, deploymentName, rs string) (depl
 }
 
 // Undo ...
-func (d *Deployer) Undo(cluster, namespace, deploymentName string) (err error) {
+func (d *Deployer) Undo(cluster, namespace, deploymentName string) (deployment *v1.Deployment, err error) {
 	var client *kubernetes.Clientset
+	defer func() {
+		if deployment, err = d.Deployment(cluster, namespace, deploymentName); err != nil {
+			return
+		}
+	}()
 	if client, err = d.Client(cluster); err != nil {
 		return
 	}

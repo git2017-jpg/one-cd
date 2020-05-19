@@ -1,9 +1,7 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
-	"time"
 )
 
 func deployHandler(c *MyContext) {
@@ -20,10 +18,7 @@ func deployHandler(c *MyContext) {
 	if err != nil {
 		return
 	}
-	go svc.Deployer.WaitForPodContainersRunning(deployment.ClusterName, deployment.Namespace, deployment.Name,
-		time.Second*100, time.Second*3, func(cluster, namespace, deploymentName, info string) {
-			fmt.Println(info)
-		})
+	go svc.WaitForDeployment(deployment.ClusterName, deployment.Namespace, deployment.Name)
 	c.JSON(http.StatusOK, &RespCommon{
 		Code: HTTPErrorCodeSuccess,
 		Data: deployment,
@@ -50,6 +45,7 @@ func updateHandler(c *MyContext) {
 	if err != nil {
 		return
 	}
+	go svc.WaitForDeployment(deployment.ClusterName, deployment.Namespace, deployment.Name)
 	c.JSON(http.StatusOK, &RespCommon{
 		Code: HTTPErrorCodeSuccess,
 		Data: deployment,
@@ -71,11 +67,14 @@ func undoHandler(c *MyContext) {
 		httpCode = http.StatusBadRequest
 		return
 	}
-	if err = svc.Deployer.Undo(req.Cluster, req.Namespace, req.DeploymentName); err != nil {
+	deployment, err := svc.Deployer.Undo(req.Cluster, req.Namespace, req.DeploymentName)
+	if err != nil {
 		return
 	}
+	go svc.WaitForDeployment(deployment.ClusterName, deployment.Namespace, deployment.Name)
 	c.JSON(http.StatusOK, &RespCommon{
 		Code: HTTPErrorCodeSuccess,
+		Data: deployment,
 	})
 }
 
@@ -99,6 +98,7 @@ func rollBackHandler(c *MyContext) {
 	if err != nil {
 		return
 	}
+	go svc.WaitForDeployment(deployment.ClusterName, deployment.Namespace, deployment.Name)
 	c.JSON(http.StatusOK, &RespCommon{
 		Code: HTTPErrorCodeSuccess,
 		Data: deployment,
