@@ -23,10 +23,13 @@ func Start(listen string) {
 	{
 		g1.POST("/deploy", handler(deployHandler))
 		g1.POST("/update", handler(updateHandler))
+		g1.POST("/undo", handler(undoHandler))
+		g1.POST("/scale", handler(scaleHandler))
 		g1.POST("/RollBack", handler(rollBackHandler))
 		g1.DELETE("/delete", handler(deleteDeploymentHandler))
 		g1.GET("/describe", handler(deploymentHandler))
 		g1.GET("/rs", handler(replicaSetHandler))
+		g1.GET("/scale", handler(getScaleHandler))
 	}
 
 	g2 := router.Group("/v1/pod")

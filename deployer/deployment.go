@@ -7,6 +7,7 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
@@ -133,6 +134,29 @@ func (d *Deployer) RollBack(cluster, namespace, deploymentName, rs string) (depl
 		}
 	}
 	err = errors.New("回滚未执行，没有找到指定的版本")
+	return
+}
+
+// Undo ...
+func (d *Deployer) Undo(cluster, namespace, deploymentName string) (deployment *v1.Deployment, err error) {
+	var client *kubernetes.Clientset
+	defer func() {
+		if deployment, err = d.Deployment(cluster, namespace, deploymentName); err != nil {
+			return
+		}
+	}()
+	if client, err = d.Client(cluster); err != nil {
+		return
+	}
+	rollback := &v1beta1.DeploymentRollback{
+		Name: deploymentName,
+		RollbackTo: v1beta1.RollbackConfig{
+			Revision: 0,
+		},
+	}
+	if err = client.ExtensionsV1beta1().Deployments(namespace).Rollback(d.ctx, rollback, metav1.CreateOptions{}); err != nil {
+		return
+	}
 	return
 }
 
